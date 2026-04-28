@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Habit Tracker</string>
+    <string name="widget_description">Tracks a single habit\'s failure count and clean streak</string>
+    <string name="widget_all_description">Shows combined failure count and clean streak across all habits</string>
+</resources>
