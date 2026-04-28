@@ -6,7 +6,7 @@ A minimalist Android habit tracker. Track habits you're trying to build or quit,
 [![Release](https://img.shields.io/github/v/release/reveny/Android-Habit-Tracker?label=Release&logo=github)](https://github.com/reveny/Android-Habit-Tracker/releases/latest)
 [![Download](https://img.shields.io/github/downloads/reveny/Android-Habit-Tracker/total?label=Downloads&logo=github)](https://github.com/reveny/Android-Habit-Tracker/releases/)
 [![Channel](https://img.shields.io/badge/Telegram-Channel-blue.svg?logo=telegram)](https://t.me/reveny1)
-[![CI](https://github.com/reveny/Android-Habit-Tracker/actions/workflows/main.yml/badge.svg)](https://github.com/reveny/Android-Habit-Tracker/actions/workflows/build.yml)
+[![Build](https://github.com/reveny/Android-Habit-Tracker/actions/workflows/build.yml/badge.svg)](https://github.com/reveny/Android-Habit-Tracker/actions/workflows/build.yml)
 
 ## Screenshots
 
