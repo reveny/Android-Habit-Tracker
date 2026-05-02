@@ -5,6 +5,7 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceTheme
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.provideContent
+import com.reveny.habittracker.util.CleanStreakCalculator
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
@@ -25,7 +26,7 @@ class AllHabitsWidget : GlanceAppWidget() {
             val habits = repository.getActiveHabitsWithFailures().first()
             totalFails = habits.sumOf { it.failuresThisMonth }
             habitCount = habits.size
-            cleanStreak = calculateCleanStreak(repository)
+            cleanStreak = calculateCleanStreak(repository, habits)
         } catch (e: Exception) {
             provideContent { GlanceTheme { ErrorContent() } }
             return
@@ -44,17 +45,17 @@ class AllHabitsWidget : GlanceAppWidget() {
 
     private suspend fun calculateCleanStreak(
         repository: com.reveny.habittracker.data.repository.HabitRepository,
+        habits: List<com.reveny.habittracker.data.model.HabitWithLogs>,
     ): Int {
+        if (habits.isEmpty()) return 0
+
         val today = LocalDate.now()
-        val logs = repository.getLogsInRange(today.minusDays(90).toString(), today.toString())
-        val failureDates = logs.map { it.date }.toSet()
-        var streak = 0
-        var date = today
-        while (streak < 90) {
-            if (date.toString() in failureDates) break
-            streak++
-            date = date.minusDays(1)
-        }
-        return streak
+        val activeHabitIds = habits.map { it.habit.id }.toSet()
+        val startDate = habits.minOf { LocalDate.parse(it.habit.createdAt) }
+        val logs = repository.getLogsInRange(
+            "2000-01-01",
+            today.toString(),
+        )
+        return CleanStreakCalculator.calculate(logs, today, startDate, activeHabitIds)
     }
 }

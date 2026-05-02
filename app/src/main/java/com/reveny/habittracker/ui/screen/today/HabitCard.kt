@@ -41,6 +41,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.window.Dialog
 import com.reveny.habittracker.data.model.HabitWithLogs
@@ -56,6 +57,7 @@ import kotlin.math.abs
 @Composable
 fun HabitCard(
     habitWithLogs: HabitWithLogs,
+    cleanStreak: Int,
     onLogFailure: (String) -> Unit,
     onDelete: () -> Unit,
     onRename: (String) -> Unit,
@@ -81,12 +83,6 @@ fun HabitCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = habit.name, style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "${habit.type.name.lowercase().replaceFirstChar { it.uppercase() }} \u2022 ${habit.frequency.label}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
             Button(
                 onClick = { showDatePicker = true },
@@ -101,7 +97,7 @@ fun HabitCard(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -111,7 +107,7 @@ fun HabitCard(
             Column {
                 Text(
                     text = "${habitWithLogs.failuresThisMonth}",
-                    style = MaterialTheme.typography.displayMedium,
+                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 58.sp),
                     color = if (habitWithLogs.failuresThisMonth == 0) Sage else Terracotta,
                 )
                 Text(
@@ -121,11 +117,25 @@ fun HabitCard(
                 )
             }
 
-            if (habitWithLogs.failuresLastMonth > 0 || habitWithLogs.failuresThisMonth > 0) {
-                val pct = abs(habitWithLogs.changePercent)
-                val color = if (habitWithLogs.isBetter) Sage else Terracotta
-                val label = if (habitWithLogs.isBetter) "better" else "worse"
-                Column(horizontalAlignment = Alignment.End) {
+            Column(horizontalAlignment = Alignment.Start) {
+                Text(
+                    text = if (cleanStreak == 0) "Failed today" else "${cleanStreak}d clean",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (cleanStreak == 0) Terracotta else Sage,
+                )
+                Text(
+                    text = "current streak",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                if (habitWithLogs.failuresLastMonth > 0 || habitWithLogs.failuresThisMonth > 0) {
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val pct = abs(habitWithLogs.changePercent)
+                    val color = if (habitWithLogs.isBetter) Sage else Terracotta
+                    val label = if (habitWithLogs.isBetter) "better" else "worse"
+
                     Text(
                         text = if (pct > 0) "$pct% $label" else "same",
                         style = MaterialTheme.typography.labelLarge,
