@@ -1,5 +1,7 @@
 package com.reveny.habittracker.ui.screen.today
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,10 +15,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.reveny.habittracker.ui.components.HandDrawnCard
@@ -52,17 +58,49 @@ fun TodayScreen(viewModel: TodayViewModel = hiltViewModel()) {
             )
         }
 
-        items(habits, key = { it.habit.id }) { habitWithLogs ->
-            HabitCard(
-                habitWithLogs = habitWithLogs,
-                cleanStreak = cleanStreaks[habitWithLogs.habit.id] ?: 0,
-                onLogFailure = { date -> viewModel.logFailure(habitWithLogs.habit.id, date) },
-                onDelete = { viewModel.deleteHabit(habitWithLogs.habit.id) },
-                onRename = { newName -> viewModel.renameHabit(habitWithLogs.habit.id, newName) },
-            )
+        items(
+            items = habits,
+            key = { it.habit.id },
+        ) { habitWithLogs ->
+            val index = habits.indexOfFirst { it.habit.id == habitWithLogs.habit.id }
+            AnimatedHabitCard(index = index.coerceAtLeast(0)) {
+                HabitCard(
+                    habitWithLogs = habitWithLogs,
+                    cleanStreak = cleanStreaks[habitWithLogs.habit.id] ?: 0,
+                    onLogFailure = { date -> viewModel.logFailure(habitWithLogs.habit.id, date) },
+                    onDelete = { viewModel.deleteHabit(habitWithLogs.habit.id) },
+                    onRename = { newName -> viewModel.renameHabit(habitWithLogs.habit.id, newName) },
+                )
+            }
         }
 
         item { Spacer(modifier = Modifier.height(16.dp)) }
+    }
+}
+
+@Composable
+private fun AnimatedHabitCard(
+    index: Int,
+    content: @Composable () -> Unit,
+) {
+    val alpha = remember { Animatable(0f) }
+    val offsetY = remember { Animatable(18f) }
+
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay((index * 45L).coerceAtMost(220L))
+        alpha.animateTo(1f, animationSpec = tween(durationMillis = 260))
+    }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay((index * 45L).coerceAtMost(220L))
+        offsetY.animateTo(0f, animationSpec = tween(durationMillis = 260))
+    }
+
+    androidx.compose.foundation.layout.Box(
+        modifier = Modifier
+            .alpha(alpha.value)
+            .graphicsLayer { translationY = offsetY.value },
+    ) {
+        content()
     }
 }
 
