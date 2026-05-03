@@ -3,6 +3,7 @@ package com.reveny.habittracker.ui.screen.addhabit
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -166,7 +168,7 @@ fun AddHabitScreen(
                         Text("Reminder", style = MaterialTheme.typography.titleMedium)
                         Text(
                             if (uiState.reminderEnabled) {
-                                "Daily at ${formatReminderTime(uiState.reminderHour, uiState.reminderMinute)}"
+                                "Daily at ${formatReminderTime(context, uiState.reminderHour, uiState.reminderMinute)}"
                             } else {
                                 "Get a daily nudge for this habit"
                             },
@@ -265,12 +267,32 @@ fun AddHabitScreen(
         val timePickerState = rememberTimePickerState(
             initialHour = uiState.reminderHour,
             initialMinute = uiState.reminderMinute,
-            is24Hour = true,
+            is24Hour = DateFormat.is24HourFormat(context),
         )
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
             title = { Text("Reminder time") },
-            text = { TimePicker(state = timePickerState) },
+            text = {
+                TimePicker(
+                    state = timePickerState,
+                    colors = TimePickerDefaults.colors(
+                        clockDialColor = MaterialTheme.colorScheme.surfaceVariant,
+                        clockDialSelectedContentColor = MaterialTheme.colorScheme.onPrimary,
+                        clockDialUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                        selectorColor = MaterialTheme.colorScheme.primary,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        periodSelectorBorderColor = MaterialTheme.colorScheme.outline,
+                        periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surface,
+                        periodSelectorSelectedContentColor = MaterialTheme.colorScheme.primary,
+                        periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        timeSelectorSelectedContentColor = MaterialTheme.colorScheme.primary,
+                        timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.updateReminderTime(timePickerState.hour, timePickerState.minute)
@@ -281,10 +303,17 @@ fun AddHabitScreen(
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
             },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
 
-private fun formatReminderTime(hour: Int, minute: Int): String {
-    return "%02d:%02d".format(hour, minute)
+private fun formatReminderTime(context: android.content.Context, hour: Int, minute: Int): String {
+    val calendar = java.util.Calendar.getInstance().apply {
+        set(java.util.Calendar.HOUR_OF_DAY, hour)
+        set(java.util.Calendar.MINUTE, minute)
+    }
+    return DateFormat.getTimeFormat(context).format(calendar.time)
 }
