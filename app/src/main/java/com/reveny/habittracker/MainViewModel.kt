@@ -6,11 +6,13 @@ import com.reveny.habittracker.data.preferences.CongratulationsPreferencesStore
 import com.reveny.habittracker.data.repository.HabitRepository
 import com.reveny.habittracker.util.CleanStreakCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -47,20 +49,21 @@ class MainViewModel @Inject constructor(
             val activeHabitIds = activeHabits.map { it.id }.toSet()
             val logs = repository.getLogsInRange("2000-01-01", today.toString())
                 .filter { it.habitId in activeHabitIds }
-            val bestStreak = activeHabits
-                .map { habit ->
-                    CongratulationsMilestoneCandidate(
-                        habitName = habit.name,
-                        streakDays = CleanStreakCalculator.calculate(
-                            logs = logs,
-                            today = today,
-                            startDate = LocalDate.parse(habit.createdAt),
-                            habitIds = setOf(habit.id),
-                        ),
-                    )
-                }
-                .maxByOrNull { it.streakDays }
-                ?: return@launch
+            val bestStreak = withContext(Dispatchers.Default) {
+                activeHabits
+                    .map { habit ->
+                        CongratulationsMilestoneCandidate(
+                            habitName = habit.name,
+                            streakDays = CleanStreakCalculator.calculate(
+                                logs = logs,
+                                today = today,
+                                startDate = LocalDate.parse(habit.createdAt),
+                                habitIds = setOf(habit.id),
+                            ),
+                        )
+                    }
+                    .maxByOrNull { it.streakDays }
+            } ?: return@launch
 
             val milestoneDays = milestoneFor(bestStreak.streakDays) ?: return@launch
             val highestShownMilestone = congratulationsPreferencesStore.getHighestShownMilestone()

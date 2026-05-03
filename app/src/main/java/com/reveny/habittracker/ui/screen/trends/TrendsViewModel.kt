@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -52,55 +54,63 @@ class TrendsViewModel @Inject constructor(
             val focusedHabitIds = focusedHabits.map { it.id }.toSet()
             val allActiveLogs = repository.getLogsInRange("2000-01-01", today.toString())
                 .filter { it.habitId in focusedHabitIds }
-            val firstHabitMonth = focusedHabits
-                .minOfOrNull { YearMonth.from(LocalDate.parse(it.createdAt)) }
-            val firstLogMonth = allActiveLogs
-                .minOfOrNull { YearMonth.from(LocalDate.parse(it.date)) }
-            val firstTrackedMonth = listOfNotNull(firstHabitMonth, firstLogMonth)
-                .minOrNull()
-                ?: currentMonth
-            val chartStartMonth = maxOf(firstTrackedMonth, currentMonth.minusMonths(5))
-            val displayedMonths = generateSequence(chartStartMonth) { month ->
-                month.plusMonths(1).takeIf { !it.isAfter(currentMonth) }
-            }.toList()
-            val thisMonthLogs = repository.getLogsInRange(thisStart, thisEnd)
-                .filter { it.habitId in focusedHabitIds }
-            val lastMonthLogs = repository.getLogsInRange(lastStart, lastEnd)
-                .filter { it.habitId in focusedHabitIds }
-            val monthlyTotals = displayedMonths.map { month ->
-                val (start, end) = DateUtils.monthStartEnd(month)
-                MonthlyTotal(
-                    label = month.month.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
-                    failures = allActiveLogs.count { it.date in start..end },
-                    isCurrentMonth = month == currentMonth,
-                )
-            }
+            val computed = withContext(Dispatchers.Default) {
+                val firstHabitMonth = focusedHabits
+                    .minOfOrNull { YearMonth.from(LocalDate.parse(it.createdAt)) }
+                val firstLogMonth = allActiveLogs
+                    .minOfOrNull { YearMonth.from(LocalDate.parse(it.date)) }
+                val firstTrackedMonth = listOfNotNull(firstHabitMonth, firstLogMonth)
+                    .minOrNull()
+                    ?: currentMonth
+                val chartStartMonth = maxOf(firstTrackedMonth, currentMonth.minusMonths(5))
+                val displayedMonths = generateSequence(chartStartMonth) { month ->
+                    month.plusMonths(1).takeIf { !it.isAfter(currentMonth) }
+                }.toList()
+                val thisMonthLogs = allActiveLogs.filter { it.date in thisStart..thisEnd }
+                val lastMonthLogs = allActiveLogs.filter { it.date in lastStart..lastEnd }
+                val monthlyTotals = displayedMonths.map { month ->
+                    val (start, end) = DateUtils.monthStartEnd(month)
+                    MonthlyTotal(
+                        label = month.month.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                        failures = allActiveLogs.count { it.date in start..end },
+                        isCurrentMonth = month == currentMonth,
+                    )
+                }
 
-            val comparisons = focusedHabits.map { habit ->
-                MonthlyComparison(
-                    habitName = habit.name,
-                    thisMonthFailures = thisMonthLogs.count { it.habitId == habit.id },
-                    lastMonthFailures = lastMonthLogs.count { it.habitId == habit.id },
-                )
-            }
+                val comparisons = focusedHabits.map { habit ->
+                    MonthlyComparison(
+                        habitName = habit.name,
+                        thisMonthFailures = thisMonthLogs.count { it.habitId == habit.id },
+                        lastMonthFailures = lastMonthLogs.count { it.habitId == habit.id },
+                    )
+                }
 
-            val totalThisMonth = thisMonthLogs.size
-            val totalLastMonth = lastMonthLogs.size
-            val overallChange = if (totalLastMonth == 0) {
-                if (totalThisMonth > 0) 100 else 0
-            } else {
-                ((totalLastMonth - totalThisMonth).toFloat() / totalLastMonth * 100).toInt()
+                val totalThisMonth = thisMonthLogs.size
+                val totalLastMonth = lastMonthLogs.size
+                val overallChange = if (totalLastMonth == 0) {
+                    if (totalThisMonth > 0) 100 else 0
+                } else {
+                    ((totalLastMonth - totalThisMonth).toFloat() / totalLastMonth * 100).toInt()
+                }
+
+                TrendsComputedState(
+                    comparisons = comparisons,
+                    totalFailuresThisMonth = totalThisMonth,
+                    totalFailuresLastMonth = totalLastMonth,
+                    overallChangePercent = overallChange,
+                    monthlyTotals = monthlyTotals,
+                )
             }
 
             _uiState.value = TrendsUiState(
-                comparisons = comparisons,
-                totalFailuresThisMonth = totalThisMonth,
-                totalFailuresLastMonth = totalLastMonth,
-                overallChangePercent = overallChange,
+                comparisons = computed.comparisons,
+                totalFailuresThisMonth = computed.totalFailuresThisMonth,
+                totalFailuresLastMonth = computed.totalFailuresLastMonth,
+                overallChangePercent = computed.overallChangePercent,
                 activeHabitCount = activeHabits.size,
                 currentMonthLabel = currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault()),
                 previousMonthLabel = lastMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault()),
-                monthlyTotals = monthlyTotals,
+                monthlyTotals = computed.monthlyTotals,
                 habits = activeHabits,
                 selectedHabit = selectedHabit,
             )
@@ -125,4 +135,12 @@ data class MonthlyTotal(
     val label: String,
     val failures: Int,
     val isCurrentMonth: Boolean,
+)
+
+private data class TrendsComputedState(
+    val comparisons: List<MonthlyComparison>,
+    val totalFailuresThisMonth: Int,
+    val totalFailuresLastMonth: Int,
+    val overallChangePercent: Int,
+    val monthlyTotals: List<MonthlyTotal>,
 )

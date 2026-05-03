@@ -8,10 +8,12 @@ import com.reveny.habittracker.notification.HabitReminderScheduler
 import com.reveny.habittracker.util.CleanStreakCalculator
 import com.reveny.habittracker.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
@@ -43,7 +45,9 @@ class TodayViewModel @Inject constructor(
                 habitIds = setOf(habit.id),
             )
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val totalCleanStreak: StateFlow<Int> = combine(
         habitsWithFailures,
@@ -60,6 +64,7 @@ class TodayViewModel @Inject constructor(
             )
         }
     }
+        .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     fun logFailure(habitId: Long, date: String) {
