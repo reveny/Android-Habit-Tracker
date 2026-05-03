@@ -15,6 +15,8 @@ data class Habit(
     val timeOfDay: TimeOfDay,
     val motivation: String = "",
     val reminderEnabled: Boolean = false,
+    val reminderHour: Int? = null,
+    val reminderMinute: Int? = null,
     val createdAt: String,
     val archivedAt: String? = null,
 )

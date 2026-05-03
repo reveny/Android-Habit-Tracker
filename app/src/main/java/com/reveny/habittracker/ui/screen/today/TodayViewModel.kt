@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reveny.habittracker.data.model.HabitWithLogs
 import com.reveny.habittracker.data.repository.HabitRepository
+import com.reveny.habittracker.notification.HabitReminderScheduler
 import com.reveny.habittracker.util.CleanStreakCalculator
 import com.reveny.habittracker.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +20,7 @@ import javax.inject.Inject
 class TodayViewModel @Inject constructor(
     private val repository: HabitRepository,
     private val widgetUpdater: WidgetUpdater,
+    private val habitReminderScheduler: HabitReminderScheduler,
 ) : ViewModel() {
 
     val habitsWithFailures: StateFlow<List<HabitWithLogs>> = repository
@@ -70,6 +72,7 @@ class TodayViewModel @Inject constructor(
     fun deleteHabit(habitId: Long) {
         viewModelScope.launch {
             repository.deleteHabit(habitId)
+            habitReminderScheduler.cancel(habitId)
             widgetUpdater.updateAll()
         }
     }

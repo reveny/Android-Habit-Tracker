@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:name=".HabitTrackerApp"
         android:allowBackup="true"
@@ -42,6 +45,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/all_habits_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".notification.HabitReminderReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".notification.ReminderBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
         </receiver>
     </application>
 
