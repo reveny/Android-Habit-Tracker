@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -29,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,7 +42,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.reveny.habittracker.data.local.entity.Habit
 import com.reveny.habittracker.ui.components.HandDrawnCard
 import com.reveny.habittracker.ui.theme.Cream
 import com.reveny.habittracker.ui.theme.Sage
@@ -51,8 +56,10 @@ import java.time.LocalDate
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val widgetHabitId by viewModel.widgetHabitId.collectAsState()
     val activeHabits by viewModel.activeHabits.collectAsState()
+    val archivedHabits by viewModel.archivedHabits.collectAsState()
     val operationStatus by viewModel.exportStatus.collectAsState()
     val context = LocalContext.current
+    var habitPendingDelete by remember { mutableStateOf<Habit?>(null) }
 
     LaunchedEffect(operationStatus) {
         operationStatus?.let {
@@ -160,6 +167,65 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        HandDrawnCard {
+            Text("Archived Habits", style = MaterialTheme.typography.headlineMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            if (archivedHabits.isEmpty()) {
+                Text(
+                    "No archived habits.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Text(
+                    "Restore a habit to bring it back to active tracking.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                archivedHabits.forEach { habit ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(habit.name, style = MaterialTheme.typography.titleSmall)
+                            habit.archivedAt?.let { archivedAt ->
+                                Text(
+                                    "Archived $archivedAt",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = { viewModel.restoreHabit(habit.id) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Sage,
+                                contentColor = Cream,
+                            ),
+                        ) {
+                            Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Text(" Restore", style = MaterialTheme.typography.labelMedium)
+                        }
+                        TextButton(onClick = { habitPendingDelete = habit }) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = null,
+                                tint = Terracotta,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Text(" Delete", color = Terracotta)
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Export
         HandDrawnCard {
             Text("Data Export", style = MaterialTheme.typography.headlineMedium)
@@ -225,5 +291,40 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(bottom = 16.dp),
         )
+    }
+
+    habitPendingDelete?.let { habit ->
+        Dialog(onDismissRequest = { habitPendingDelete = null }) {
+            HandDrawnCard {
+                Text("Delete archived habit?", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "\"${habit.name}\" and all failure logs will be permanently deleted.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = { habitPendingDelete = null }) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.deleteArchivedHabit(habit.id)
+                            habitPendingDelete = null
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Terracotta,
+                            contentColor = Cream,
+                        ),
+                    ) {
+                        Text("Delete")
+                    }
+                }
+            }
+        }
     }
 }

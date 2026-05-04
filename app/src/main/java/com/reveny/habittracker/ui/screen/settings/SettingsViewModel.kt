@@ -9,6 +9,7 @@ import com.reveny.habittracker.data.model.Frequency
 import com.reveny.habittracker.data.model.TimeOfDay
 import com.reveny.habittracker.data.preferences.WidgetPreferencesStore
 import com.reveny.habittracker.data.repository.HabitRepository
+import com.reveny.habittracker.notification.HabitReminderScheduler
 import com.reveny.habittracker.util.CsvExporter
 import com.reveny.habittracker.util.CsvImporter
 import com.reveny.habittracker.util.DateUtils
@@ -29,10 +30,15 @@ class SettingsViewModel @Inject constructor(
     private val repository: HabitRepository,
     private val widgetPreferencesStore: WidgetPreferencesStore,
     private val widgetUpdater: WidgetUpdater,
+    private val habitReminderScheduler: HabitReminderScheduler,
 ) : ViewModel() {
 
     val activeHabits: StateFlow<List<Habit>> = repository.getAllHabits()
         .map { habits -> habits.filter { it.archivedAt == null } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val archivedHabits: StateFlow<List<Habit>> = repository.getAllHabits()
+        .map { habits -> habits.filter { it.archivedAt != null } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val widgetHabitId: StateFlow<Long> = widgetPreferencesStore.widgetHabitId
@@ -41,6 +47,22 @@ class SettingsViewModel @Inject constructor(
     fun setWidgetHabit(habitId: Long) {
         viewModelScope.launch {
             widgetPreferencesStore.setWidgetHabitId(habitId)
+            widgetUpdater.updateAll()
+        }
+    }
+
+    fun restoreHabit(habitId: Long) {
+        viewModelScope.launch {
+            repository.restoreHabit(habitId)
+            repository.getHabitById(habitId)?.let { habitReminderScheduler.schedule(it) }
+            widgetUpdater.updateAll()
+        }
+    }
+
+    fun deleteArchivedHabit(habitId: Long) {
+        viewModelScope.launch {
+            repository.deleteHabit(habitId)
+            habitReminderScheduler.cancel(habitId)
             widgetUpdater.updateAll()
         }
     }
@@ -101,7 +123,12 @@ class SettingsViewModel @Inject constructor(
                     }
 
                     // insertLogRaw returns -1 if the (habitId, date) pair already existed
-                    val rowId = repository.insertLogRaw(habit.id, row.failureDate, row.note)
+                    val rowId = repository.insertLogRaw(
+                        habit.id,
+                        row.failureDate,
+                        row.note,
+                        row.failureTime,
+                    )
                     if (rowId != -1L) logsImported++
                 }
 

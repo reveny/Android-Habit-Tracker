@@ -19,9 +19,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.reveny.habittracker.ui.screen.addhabit.AddHabitScreen
 import com.reveny.habittracker.ui.screen.calendar.CalendarScreen
 import com.reveny.habittracker.ui.screen.calendar.CalendarViewModel
+import com.reveny.habittracker.ui.screen.detail.HabitDetailScreen
 import com.reveny.habittracker.ui.screen.settings.SettingsScreen
 import com.reveny.habittracker.ui.screen.settings.SettingsViewModel
 import com.reveny.habittracker.ui.screen.today.TodayScreen
@@ -80,12 +83,25 @@ fun NavGraph(
             startDestination = Screen.Today.route,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Screen.Today.route) { TodayScreen(todayViewModel) }
+            composable(Screen.Today.route) {
+                TodayScreen(
+                    viewModel = todayViewModel,
+                    onOpenHabit = { habitId ->
+                        navController.navigate(Screen.HabitDetail.createRoute(habitId))
+                    },
+                )
+            }
             composable(Screen.Trends.route) { TrendsScreen(trendsViewModel ?: hiltViewModel()) }
             composable(Screen.Calendar.route) { CalendarScreen(calendarViewModel ?: hiltViewModel()) }
             composable(Screen.Settings.route) { SettingsScreen(settingsViewModel ?: hiltViewModel()) }
             composable(Screen.AddHabit.route) {
                 AddHabitScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            composable(
+                route = Screen.HabitDetail.route,
+                arguments = listOf(navArgument("habitId") { type = NavType.LongType }),
+            ) {
+                HabitDetailScreen(onNavigateBack = { navController.popBackStack() })
             }
         }
     }

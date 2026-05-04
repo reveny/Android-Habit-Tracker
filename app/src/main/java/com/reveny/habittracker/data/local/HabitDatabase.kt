@@ -13,7 +13,7 @@ import com.reveny.habittracker.data.local.entity.HabitLog
 
 @Database(
     entities = [Habit::class, HabitLog::class],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -32,6 +32,12 @@ abstract class HabitDatabase : RoomDatabase() {
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE habit_logs ADD COLUMN note TEXT")
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE habit_logs ADD COLUMN failureTime TEXT")
             }
         }
     }

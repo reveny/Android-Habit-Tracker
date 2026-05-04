@@ -10,7 +10,9 @@ import com.reveny.habittracker.util.DateUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import java.time.LocalTime
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -52,26 +54,33 @@ class HabitRepositoryImpl @Inject constructor(
     override suspend fun archiveHabit(id: Long, archivedAt: String) =
         habitDao.archive(id, archivedAt)
 
+    override suspend fun restoreHabit(id: Long) {
+        val habit = habitDao.getById(id) ?: return
+        habitDao.update(habit.copy(archivedAt = null))
+    }
+
     override suspend fun deleteHabit(id: Long) = habitDao.delete(id)
 
-    override suspend fun logFailure(habitId: Long, date: String, note: String?) {
+    override suspend fun logFailure(habitId: Long, date: String, note: String?, failureTime: String?) {
         habitLogDao.insert(
             HabitLog(
                 habitId = habitId,
                 date = date,
                 createdAt = DateUtils.todayIso(),
                 note = note?.trim()?.takeIf { it.isNotEmpty() },
+                failureTime = normalizeFailureTimeOrNull(failureTime),
             )
         )
     }
 
-    override suspend fun insertLogRaw(habitId: Long, date: String, note: String?): Long =
+    override suspend fun insertLogRaw(habitId: Long, date: String, note: String?, failureTime: String?): Long =
         habitLogDao.insert(
             HabitLog(
                 habitId = habitId,
                 date = date,
                 createdAt = DateUtils.todayIso(),
                 note = note?.trim()?.takeIf { it.isNotEmpty() },
+                failureTime = normalizeFailureTime(failureTime),
             )
         )
 
@@ -85,7 +94,12 @@ class HabitRepositoryImpl @Inject constructor(
             false // removed
         } else {
             habitLogDao.insert(
-                HabitLog(habitId = habitId, date = date, createdAt = DateUtils.todayIso())
+                HabitLog(
+                    habitId = habitId,
+                    date = date,
+                    createdAt = DateUtils.todayIso(),
+                    failureTime = currentFailureTime(),
+                )
             )
             true // added
         }
@@ -94,6 +108,9 @@ class HabitRepositoryImpl @Inject constructor(
     override suspend fun hasFailure(habitId: Long, date: String): Boolean {
         return habitLogDao.exists(habitId, date)
     }
+
+    override fun getLogsForHabit(habitId: Long): Flow<List<HabitLog>> =
+        habitLogDao.getLogsForHabit(habitId)
 
     override suspend fun getLogsInRange(startDate: String, endDate: String): List<HabitLog> =
         habitLogDao.getLogsInRange(startDate, endDate)
@@ -122,4 +139,17 @@ class HabitRepositoryImpl @Inject constructor(
 
     override suspend fun getAllHabitLogs(): List<HabitLog> =
         getLogsInRange("2000-01-01", "2099-12-31")
+
+    private fun normalizeFailureTime(failureTime: String?): String =
+        failureTime?.takeIf { it.matches(TIME_PATTERN) } ?: currentFailureTime()
+
+    private fun normalizeFailureTimeOrNull(failureTime: String?): String? =
+        failureTime?.takeIf { it.matches(TIME_PATTERN) }
+
+    private fun currentFailureTime(): String =
+        LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+
+    companion object {
+        private val TIME_PATTERN = Regex("""\d{2}:\d{2}""")
+    }
 }

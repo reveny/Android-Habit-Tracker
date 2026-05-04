@@ -6,6 +6,7 @@ data class CsvRow(
     val habitName: String,
     val habitType: HabitType,
     val failureDate: String,
+    val failureTime: String? = null,
     val note: String? = null,
 )
 
@@ -14,6 +15,7 @@ object CsvImporter {
     private val SUPPORTED_HEADERS = setOf(
         "habit_id,habit_name,type,failure_date",
         "habit_id,habit_name,type,failure_date,note",
+        "habit_id,habit_name,type,failure_date,failure_time,note",
     )
 
     fun parse(csv: String): List<CsvRow>? {
@@ -38,9 +40,16 @@ object CsvImporter {
             HabitType.QUIT
         }
         val date = fields[3].trim().ifBlank { return null }
-        val note = fields.getOrNull(4)?.trim()?.takeIf { it.isNotEmpty() }
+        val hasFailureTime = fields.size >= 6
+        val failureTime = if (hasFailureTime) {
+            fields.getOrNull(4)?.trim()?.takeIf { it.matches(TIME_PATTERN) }
+        } else {
+            null
+        }
+        val noteIndex = if (hasFailureTime) 5 else 4
+        val note = fields.getOrNull(noteIndex)?.trim()?.takeIf { it.isNotEmpty() }
 
-        return CsvRow(habitName, habitType, date, note)
+        return CsvRow(habitName, habitType, date, failureTime, note)
     }
 
     private fun splitCsvLine(line: String): List<String> {
@@ -67,4 +76,6 @@ object CsvImporter {
         fields.add(current.toString())
         return fields
     }
+
+    private val TIME_PATTERN = Regex("""\d{2}:\d{2}""")
 }

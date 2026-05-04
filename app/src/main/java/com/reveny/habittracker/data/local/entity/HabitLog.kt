@@ -26,4 +26,5 @@ data class HabitLog(
     val date: String,
     val createdAt: String,
     val note: String? = null,
+    val failureTime: String? = null,
 )

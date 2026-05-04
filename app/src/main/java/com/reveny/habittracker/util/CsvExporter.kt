@@ -9,7 +9,7 @@ object CsvExporter {
 
     fun buildCsv(habits: List<Habit>, logs: List<HabitLog>): String {
         val sb = StringBuilder()
-        sb.appendLine("habit_id,habit_name,type,failure_date,note")
+        sb.appendLine("habit_id,habit_name,type,failure_date,failure_time,note")
         val habitMap = habits.associateBy { it.id }
         logs.sortedBy { it.date }.forEach { log ->
             val habit = habitMap[log.habitId]
@@ -19,6 +19,7 @@ object CsvExporter {
                     escapeCsv(habit?.name ?: "Unknown"),
                     habit?.type?.name.orEmpty(),
                     log.date,
+                    log.failureTime.orEmpty(),
                     escapeCsv(log.note.orEmpty()),
                 ).joinToString(",")
             )

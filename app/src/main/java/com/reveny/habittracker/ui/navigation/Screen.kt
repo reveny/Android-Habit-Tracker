@@ -13,6 +13,9 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector?
     data object Calendar : Screen("calendar", "Calendar", Icons.Default.CalendarMonth)
     data object Settings : Screen("settings", "Settings", Icons.Default.Settings)
     data object AddHabit : Screen("add_habit", "Add Habit", null)
+    data object HabitDetail : Screen("habit_detail/{habitId}", "Habit Detail", null) {
+        fun createRoute(habitId: Long) = "habit_detail/$habitId"
+    }
 }
 
 val bottomNavItems = listOf(Screen.Today, Screen.Trends, Screen.Calendar, Screen.Settings)

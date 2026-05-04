@@ -31,7 +31,10 @@ import com.reveny.habittracker.ui.theme.Sage
 import com.reveny.habittracker.ui.theme.Terracotta
 
 @Composable
-fun TodayScreen(viewModel: TodayViewModel = hiltViewModel()) {
+fun TodayScreen(
+    viewModel: TodayViewModel = hiltViewModel(),
+    onOpenHabit: (Long) -> Unit = {},
+) {
     val habits by viewModel.habitsWithFailures.collectAsState()
     val totalCleanStreak by viewModel.totalCleanStreak.collectAsState()
     val cleanStreaks by viewModel.cleanStreaks.collectAsState()
@@ -67,11 +70,10 @@ fun TodayScreen(viewModel: TodayViewModel = hiltViewModel()) {
                 HabitCard(
                     habitWithLogs = habitWithLogs,
                     cleanStreak = cleanStreaks[habitWithLogs.habit.id] ?: 0,
-                    onLogFailure = { date, note ->
-                        viewModel.logFailure(habitWithLogs.habit.id, date, note)
+                    onLogFailure = { date, note, failureTime ->
+                        viewModel.logFailure(habitWithLogs.habit.id, date, note, failureTime)
                     },
-                    onDelete = { viewModel.deleteHabit(habitWithLogs.habit.id) },
-                    onRename = { newName -> viewModel.renameHabit(habitWithLogs.habit.id, newName) },
+                    onOpen = { onOpenHabit(habitWithLogs.habit.id) },
                 )
             }
         }

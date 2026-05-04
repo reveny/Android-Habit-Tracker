@@ -104,7 +104,7 @@ class MainViewModel @Inject constructor(
                     val id = repository.createHabit(newHabit)
                     newHabit.copy(id = id)
                 }
-                repository.insertLogRaw(habit.id, row.failureDate, row.note)
+                repository.insertLogRaw(habit.id, row.failureDate, row.note, row.failureTime)
             }
             congratulationsPreferencesStore.setOnboardingComplete(true)
             _showOnboarding.value = false

@@ -27,6 +27,7 @@ object AppModule {
             .addMigrations(
                 HabitDatabase.MIGRATION_2_3,
                 HabitDatabase.MIGRATION_3_4,
+                HabitDatabase.MIGRATION_4_5,
             )
             .fallbackToDestructiveMigration(false)
             .build()

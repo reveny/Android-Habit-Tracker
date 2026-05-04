@@ -41,7 +41,6 @@ import com.reveny.habittracker.ui.theme.Terracotta
 fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val habits by viewModel.habits.collectAsState()
-    val activeHabits = habits.filter { it.archivedAt == null }
     var dayForDialog by remember { mutableStateOf<Int?>(null) }
     var failedHabitIds by remember { mutableStateOf(emptySet<Long>()) }
     var pendingFailure by remember { mutableStateOf<PendingCalendarFailure?>(null) }
@@ -128,14 +127,14 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
                         } else {
                             pendingFailure = PendingCalendarFailure(selected.id, selected.name, day)
                         }
-                    } else if (activeHabits.size == 1) {
-                        val habit = activeHabits.first()
+                    } else if (habits.size == 1) {
+                        val habit = habits.first()
                         if (hasFailure) {
                             viewModel.removeFailure(habit.id, day)
                         } else {
                             pendingFailure = PendingCalendarFailure(habit.id, habit.name, day)
                         }
-                    } else if (activeHabits.isNotEmpty()) {
+                    } else if (habits.isNotEmpty()) {
                         dayForDialog = day
                     }
                 },
@@ -170,7 +169,7 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                activeHabits.forEach { habit ->
+                habits.forEach { habit ->
                     val isFailed = habit.id in failedHabitIds
                     Row(
                         modifier = Modifier
@@ -226,8 +225,8 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
         FailureNoteDialog(
             date = date,
             habitName = pending.habitName,
-            onConfirm = { note ->
-                viewModel.logFailure(pending.habitId, pending.day, note)
+            onConfirm = { note, failureTime ->
+                viewModel.logFailure(pending.habitId, pending.day, note, failureTime)
                 pendingFailure = null
             },
             onDismiss = { pendingFailure = null },

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -29,6 +30,7 @@ class CalendarViewModel @Inject constructor(
     val uiState: StateFlow<CalendarUiState> = _uiState.asStateFlow()
 
     val habits = repository.getAllHabits()
+        .map { habits -> habits.filter { it.archivedAt == null } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -36,7 +38,9 @@ class CalendarViewModel @Inject constructor(
     }
 
     fun selectHabit(habit: Habit?) {
-        _uiState.update { it.copy(selectedHabit = habit) }
+        _uiState.update { state ->
+            state.copy(selectedHabit = habit?.takeIf { it.archivedAt == null })
+        }
         loadMonth(_uiState.value.currentMonth)
     }
 
@@ -61,10 +65,10 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
-    fun logFailure(habitId: Long, day: Int, note: String?) {
+    fun logFailure(habitId: Long, day: Int, note: String?, failureTime: String) {
         val date = _uiState.value.currentMonth.atDay(day).toString()
         viewModelScope.launch {
-            repository.logFailure(habitId, date, note)
+            repository.logFailure(habitId, date, note, failureTime)
             loadMonth(_uiState.value.currentMonth)
             widgetUpdater.updateAll()
         }
@@ -82,19 +86,27 @@ class CalendarViewModel @Inject constructor(
     suspend fun getFailedHabitIds(day: Int): Set<Long> {
         val date = _uiState.value.currentMonth.atDay(day).toString()
         val (start, end) = date to date
+        val activeHabitIds = habits.value.map { it.id }.toSet()
         val logs = repository.getLogsInRange(start, end)
-        return logs.map { it.habitId }.toSet()
+        return logs
+            .filter { it.habitId in activeHabitIds }
+            .map { it.habitId }
+            .toSet()
     }
 
     private fun loadMonth(yearMonth: YearMonth) {
         viewModelScope.launch {
             val (startDate, endDate) = DateUtils.monthStartEnd(yearMonth)
             val logs = repository.getLogsInRange(startDate, endDate)
-            val selectedHabitId = _uiState.value.selectedHabit?.id
+            val activeHabits = habits.value
+            val activeHabitIds = activeHabits.map { it.id }.toSet()
+            val selectedHabit = _uiState.value.selectedHabit
+                ?.takeIf { selected -> selected.id in activeHabitIds }
+            val selectedHabitId = selectedHabit?.id
             val filteredLogs = if (selectedHabitId != null) {
                 logs.filter { it.habitId == selectedHabitId }
             } else {
-                logs
+                logs.filter { it.habitId in activeHabitIds }
             }
 
             val today = LocalDate.now()
@@ -128,6 +140,7 @@ class CalendarViewModel @Inject constructor(
                     failureDays = failureDays,
                     cleanStreak = cleanStreak,
                     monthLabel = DateUtils.formatMonthYear(yearMonth),
+                    selectedHabit = selectedHabit,
                 )
             }
         }
