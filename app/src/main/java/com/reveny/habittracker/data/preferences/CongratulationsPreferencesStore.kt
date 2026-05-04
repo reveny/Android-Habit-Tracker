@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,14 @@ class CongratulationsPreferencesStore @Inject constructor(
         .catch { emit(emptyPreferences()) }
         .map { prefs -> prefs[HIGHEST_SHOWN_MILESTONE_KEY] ?: 0 }
 
+    private val lastShownWeeklyReviewEndDate: Flow<String?> = context.congratulationsDataStore.data
+        .catch { emit(emptyPreferences()) }
+        .map { prefs -> prefs[LAST_SHOWN_WEEKLY_REVIEW_END_DATE_KEY] }
+
+    private val lastShownMonthlyReviewMonth: Flow<String?> = context.congratulationsDataStore.data
+        .catch { emit(emptyPreferences()) }
+        .map { prefs -> prefs[LAST_SHOWN_MONTHLY_REVIEW_MONTH_KEY] }
+
     suspend fun getHighestShownMilestone(): Int {
         return highestShownMilestone.first()
     }
@@ -37,7 +46,29 @@ class CongratulationsPreferencesStore @Inject constructor(
         }
     }
 
+    suspend fun getLastShownWeeklyReviewEndDate(): String? {
+        return lastShownWeeklyReviewEndDate.first()
+    }
+
+    suspend fun setLastShownWeeklyReviewEndDate(date: String) {
+        context.congratulationsDataStore.edit { prefs ->
+            prefs[LAST_SHOWN_WEEKLY_REVIEW_END_DATE_KEY] = date
+        }
+    }
+
+    suspend fun getLastShownMonthlyReviewMonth(): String? {
+        return lastShownMonthlyReviewMonth.first()
+    }
+
+    suspend fun setLastShownMonthlyReviewMonth(month: String) {
+        context.congratulationsDataStore.edit { prefs ->
+            prefs[LAST_SHOWN_MONTHLY_REVIEW_MONTH_KEY] = month
+        }
+    }
+
     private companion object {
         val HIGHEST_SHOWN_MILESTONE_KEY = intPreferencesKey("highest_shown_milestone")
+        val LAST_SHOWN_WEEKLY_REVIEW_END_DATE_KEY = stringPreferencesKey("last_shown_weekly_review_end_date")
+        val LAST_SHOWN_MONTHLY_REVIEW_MONTH_KEY = stringPreferencesKey("last_shown_monthly_review_month")
     }
 }

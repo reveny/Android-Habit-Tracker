@@ -9,7 +9,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.reveny.habittracker.ui.navigation.NavGraph
 import com.reveny.habittracker.ui.screen.congratulations.CongratulationsScreen
+import com.reveny.habittracker.ui.screen.monthlyreview.MonthlyReviewScreen
 import com.reveny.habittracker.ui.theme.HabitTrackerTheme
+import com.reveny.habittracker.ui.screen.weeklyreview.WeeklyReviewScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -22,16 +24,33 @@ class MainActivity : ComponentActivity() {
         setContent {
             HabitTrackerTheme {
                 val congratulationsMilestone by viewModel.congratulationsMilestone.collectAsState()
+                val weeklyReview by viewModel.weeklyReview.collectAsState()
+                val monthlyReview by viewModel.monthlyReview.collectAsState()
 
                 val milestone = congratulationsMilestone
-                if (milestone != null) {
-                    CongratulationsScreen(
-                        streakDays = milestone.streakDays,
-                        habitName = milestone.habitName,
-                        onContinue = viewModel::markCongratulationsShown,
-                    )
-                } else {
-                    NavGraph()
+                val review = weeklyReview
+                val monthReview = monthlyReview
+                when {
+                    milestone != null -> {
+                        CongratulationsScreen(
+                            streakDays = milestone.streakDays,
+                            habitName = milestone.habitName,
+                            onContinue = viewModel::markCongratulationsShown,
+                        )
+                    }
+                    review != null -> {
+                        WeeklyReviewScreen(
+                            review = review,
+                            onContinue = viewModel::markWeeklyReviewShown,
+                        )
+                    }
+                    monthReview != null -> {
+                        MonthlyReviewScreen(
+                            review = monthReview,
+                            onContinue = viewModel::markMonthlyReviewShown,
+                        )
+                    }
+                    else -> NavGraph()
                 }
             }
         }
