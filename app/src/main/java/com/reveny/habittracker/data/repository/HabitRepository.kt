@@ -14,8 +14,8 @@ interface HabitRepository {
     suspend fun updateHabit(habit: Habit)
     suspend fun archiveHabit(id: Long, archivedAt: String)
     suspend fun deleteHabit(id: Long)
-    suspend fun logFailure(habitId: Long, date: String)
-    suspend fun insertLogRaw(habitId: Long, date: String): Long
+    suspend fun logFailure(habitId: Long, date: String, note: String? = null)
+    suspend fun insertLogRaw(habitId: Long, date: String, note: String? = null): Long
     suspend fun removeFailure(habitId: Long, date: String)
     suspend fun toggleFailure(habitId: Long, date: String): Boolean
     suspend fun hasFailure(habitId: Long, date: String): Boolean

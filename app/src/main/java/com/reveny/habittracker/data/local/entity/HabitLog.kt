@@ -25,4 +25,5 @@ data class HabitLog(
     val habitId: Long,
     val date: String,
     val createdAt: String,
+    val note: String? = null,
 )

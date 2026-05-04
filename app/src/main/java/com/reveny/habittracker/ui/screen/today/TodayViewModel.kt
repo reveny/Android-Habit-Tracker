@@ -67,9 +67,9 @@ class TodayViewModel @Inject constructor(
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    fun logFailure(habitId: Long, date: String) {
+    fun logFailure(habitId: Long, date: String, note: String?) {
         viewModelScope.launch {
-            repository.logFailure(habitId, date)
+            repository.logFailure(habitId, date, note)
             widgetUpdater.updateAll()
         }
     }

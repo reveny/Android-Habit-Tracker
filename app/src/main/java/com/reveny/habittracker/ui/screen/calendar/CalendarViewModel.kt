@@ -61,6 +61,24 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
+    fun logFailure(habitId: Long, day: Int, note: String?) {
+        val date = _uiState.value.currentMonth.atDay(day).toString()
+        viewModelScope.launch {
+            repository.logFailure(habitId, date, note)
+            loadMonth(_uiState.value.currentMonth)
+            widgetUpdater.updateAll()
+        }
+    }
+
+    fun removeFailure(habitId: Long, day: Int) {
+        val date = _uiState.value.currentMonth.atDay(day).toString()
+        viewModelScope.launch {
+            repository.removeFailure(habitId, date)
+            loadMonth(_uiState.value.currentMonth)
+            widgetUpdater.updateAll()
+        }
+    }
+
     suspend fun getFailedHabitIds(day: Int): Set<Long> {
         val date = _uiState.value.currentMonth.atDay(day).toString()
         val (start, end) = date to date

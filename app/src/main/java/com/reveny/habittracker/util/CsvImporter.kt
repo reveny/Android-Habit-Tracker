@@ -6,16 +6,20 @@ data class CsvRow(
     val habitName: String,
     val habitType: HabitType,
     val failureDate: String,
+    val note: String? = null,
 )
 
 object CsvImporter {
 
-    private val EXPECTED_HEADER = "habit_id,habit_name,type,failure_date"
+    private val SUPPORTED_HEADERS = setOf(
+        "habit_id,habit_name,type,failure_date",
+        "habit_id,habit_name,type,failure_date,note",
+    )
 
     fun parse(csv: String): List<CsvRow>? {
         val lines = csv.lines()
         val header = lines.firstOrNull()?.trim() ?: return null
-        if (header != EXPECTED_HEADER) return null
+        if (header !in SUPPORTED_HEADERS) return null
 
         return lines.drop(1).mapNotNull { line ->
             if (line.isBlank()) return@mapNotNull null
@@ -34,16 +38,23 @@ object CsvImporter {
             HabitType.QUIT
         }
         val date = fields[3].trim().ifBlank { return null }
+        val note = fields.getOrNull(4)?.trim()?.takeIf { it.isNotEmpty() }
 
-        return CsvRow(habitName, habitType, date)
+        return CsvRow(habitName, habitType, date, note)
     }
 
     private fun splitCsvLine(line: String): List<String> {
         val fields = mutableListOf<String>()
         val current = StringBuilder()
         var inQuotes = false
-        for (ch in line) {
+        var index = 0
+        while (index < line.length) {
+            val ch = line[index]
             when {
+                ch == '"' && inQuotes && line.getOrNull(index + 1) == '"' -> {
+                    current.append('"')
+                    index++
+                }
                 ch == '"' -> inQuotes = !inQuotes
                 ch == ',' && !inQuotes -> {
                     fields.add(current.toString())
@@ -51,6 +62,7 @@ object CsvImporter {
                 }
                 else -> current.append(ch)
             }
+            index++
         }
         fields.add(current.toString())
         return fields

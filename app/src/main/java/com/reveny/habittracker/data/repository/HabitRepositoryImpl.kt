@@ -54,19 +54,25 @@ class HabitRepositoryImpl @Inject constructor(
 
     override suspend fun deleteHabit(id: Long) = habitDao.delete(id)
 
-    override suspend fun logFailure(habitId: Long, date: String) {
+    override suspend fun logFailure(habitId: Long, date: String, note: String?) {
         habitLogDao.insert(
             HabitLog(
                 habitId = habitId,
                 date = date,
                 createdAt = DateUtils.todayIso(),
+                note = note?.trim()?.takeIf { it.isNotEmpty() },
             )
         )
     }
 
-    override suspend fun insertLogRaw(habitId: Long, date: String): Long =
+    override suspend fun insertLogRaw(habitId: Long, date: String, note: String?): Long =
         habitLogDao.insert(
-            HabitLog(habitId = habitId, date = date, createdAt = DateUtils.todayIso())
+            HabitLog(
+                habitId = habitId,
+                date = date,
+                createdAt = DateUtils.todayIso(),
+                note = note?.trim()?.takeIf { it.isNotEmpty() },
+            )
         )
 
     override suspend fun removeFailure(habitId: Long, date: String) {

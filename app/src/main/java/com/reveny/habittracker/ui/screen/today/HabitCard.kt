@@ -21,8 +21,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,12 +43,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.window.Dialog
 import com.reveny.habittracker.data.model.HabitWithLogs
+import com.reveny.habittracker.ui.components.FailureDatePickerDialog
+import com.reveny.habittracker.ui.components.FailureNoteDialog
 import com.reveny.habittracker.ui.components.HandDrawnCard
 import com.reveny.habittracker.ui.theme.Cream
 import com.reveny.habittracker.ui.theme.Sage
 import com.reveny.habittracker.ui.theme.Terracotta
-import java.time.Instant
-import java.time.ZoneId
 import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -58,7 +56,7 @@ import kotlin.math.abs
 fun HabitCard(
     habitWithLogs: HabitWithLogs,
     cleanStreak: Int,
-    onLogFailure: (String) -> Unit,
+    onLogFailure: (String, String?) -> Unit,
     onDelete: () -> Unit,
     onRename: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -68,6 +66,7 @@ fun HabitCard(
     var showActionMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
+    var failureDate by remember { mutableStateOf<String?>(null) }
     var renameText by remember(habit.name) { mutableStateOf(habit.name) }
 
     HandDrawnCard(
@@ -152,29 +151,25 @@ fun HabitCard(
     }
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = System.currentTimeMillis(),
+        FailureDatePickerDialog(
+            onDateSelected = { date ->
+                failureDate = date
+                showDatePicker = false
+            },
+            onDismiss = { showDatePicker = false },
         )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val date = Instant.ofEpochMilli(millis)
-                            .atZone(ZoneId.of("UTC"))
-                            .toLocalDate()
-                            .toString()
-                        onLogFailure(date)
-                    }
-                    showDatePicker = false
-                }) { Text("Log Failure") }
+    }
+
+    failureDate?.let { selectedDate ->
+        FailureNoteDialog(
+            date = selectedDate,
+            habitName = habit.name,
+            onConfirm = { note ->
+                onLogFailure(selectedDate, note)
+                failureDate = null
             },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
-            },
-        ) {
-            DatePicker(state = datePickerState)
-        }
+            onDismiss = { failureDate = null },
+        )
     }
 
     if (showActionMenu) {

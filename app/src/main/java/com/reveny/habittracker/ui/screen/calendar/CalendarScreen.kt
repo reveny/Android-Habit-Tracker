@@ -15,8 +15,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,7 +30,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.reveny.habittracker.ui.components.FailureNoteDialog
 import com.reveny.habittracker.ui.components.HandDrawnCard
 import com.reveny.habittracker.ui.theme.Sage
 import com.reveny.habittracker.ui.theme.Terracotta
@@ -41,8 +41,10 @@ import com.reveny.habittracker.ui.theme.Terracotta
 fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val habits by viewModel.habits.collectAsState()
+    val activeHabits = habits.filter { it.archivedAt == null }
     var dayForDialog by remember { mutableStateOf<Int?>(null) }
     var failedHabitIds by remember { mutableStateOf(emptySet<Long>()) }
+    var pendingFailure by remember { mutableStateOf<PendingCalendarFailure?>(null) }
 
     LaunchedEffect(dayForDialog) {
         failedHabitIds = dayForDialog?.let { viewModel.getFailedHabitIds(it) } ?: emptySet()
@@ -115,11 +117,25 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
                 days = uiState.calendarDays,
                 onDayClick = { day ->
                     val selected = uiState.selectedHabit
+                    val hasFailure = uiState.calendarDays
+                        .firstOrNull { it.day == day }
+                        ?.failureCount
+                        ?.let { it > 0 }
+                        ?: false
                     if (selected != null) {
-                        viewModel.toggleFailure(selected.id, day)
-                    } else if (habits.size == 1) {
-                        viewModel.toggleFailure(habits.first().id, day)
-                    } else if (habits.isNotEmpty()) {
+                        if (hasFailure) {
+                            viewModel.removeFailure(selected.id, day)
+                        } else {
+                            pendingFailure = PendingCalendarFailure(selected.id, selected.name, day)
+                        }
+                    } else if (activeHabits.size == 1) {
+                        val habit = activeHabits.first()
+                        if (hasFailure) {
+                            viewModel.removeFailure(habit.id, day)
+                        } else {
+                            pendingFailure = PendingCalendarFailure(habit.id, habit.name, day)
+                        }
+                    } else if (activeHabits.isNotEmpty()) {
                         dayForDialog = day
                     }
                 },
@@ -140,61 +156,87 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
     }
 
     dayForDialog?.let { day ->
-        val dateLabel = uiState.currentMonth.atDay(day).toString()
-        AlertDialog(
+        Dialog(
             onDismissRequest = { dayForDialog = null },
-            title = { Text(dateLabel) },
-            text = {
-                Column {
-                    Text(
-                        "Tap a habit to toggle failure",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp),
-                    )
-                    habits.filter { it.archivedAt == null }.forEach { habit ->
-                        val isFailed = habit.id in failedHabitIds
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.toggleFailure(habit.id, day)
-                                    failedHabitIds = if (isFailed) {
-                                        failedHabitIds - habit.id
-                                    } else {
-                                        failedHabitIds + habit.id
-                                    }
+        ) {
+            HandDrawnCard {
+                Text("Which habit failed?", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Tap a habit to add a note.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                activeHabits.forEach { habit ->
+                    val isFailed = habit.id in failedHabitIds
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (isFailed) {
+                                    viewModel.removeFailure(habit.id, day)
+                                    failedHabitIds = failedHabitIds - habit.id
+                                } else {
+                                    pendingFailure = PendingCalendarFailure(
+                                        habitId = habit.id,
+                                        habitName = habit.name,
+                                        day = day,
+                                    )
+                                    dayForDialog = null
                                 }
-                                .padding(vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Icon(
-                                Icons.Default.Circle,
-                                contentDescription = null,
-                                tint = if (isFailed) Terracotta else Sage.copy(alpha = 0.3f),
-                                modifier = Modifier.size(12.dp),
-                            )
-                            Text(
-                                text = habit.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = if (isFailed) Terracotta else MaterialTheme.colorScheme.onSurface,
-                            )
-                            if (isFailed) {
-                                Text(
-                                    "failed",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Terracotta,
-                                )
                             }
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = habit.name,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (isFailed) {
+                            Text(
+                                "failed",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Terracotta,
+                            )
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = { dayForDialog = null }) {
+                        Text("Cancel", color = Sage)
+                    }
+                }
+            }
+        }
+    }
+
+    pendingFailure?.let { pending ->
+        val date = uiState.currentMonth.atDay(pending.day).toString()
+        FailureNoteDialog(
+            date = date,
+            habitName = pending.habitName,
+            onConfirm = { note ->
+                viewModel.logFailure(pending.habitId, pending.day, note)
+                pendingFailure = null
             },
-            confirmButton = {
-                TextButton(onClick = { dayForDialog = null }) { Text("Done") }
-            },
-            dismissButton = {},
+            onDismiss = { pendingFailure = null },
         )
     }
 }
+
+private data class PendingCalendarFailure(
+    val habitId: Long,
+    val habitName: String,
+    val day: Int,
+)

@@ -67,7 +67,9 @@ fun TodayScreen(viewModel: TodayViewModel = hiltViewModel()) {
                 HabitCard(
                     habitWithLogs = habitWithLogs,
                     cleanStreak = cleanStreaks[habitWithLogs.habit.id] ?: 0,
-                    onLogFailure = { date -> viewModel.logFailure(habitWithLogs.habit.id, date) },
+                    onLogFailure = { date, note ->
+                        viewModel.logFailure(habitWithLogs.habit.id, date, note)
+                    },
                     onDelete = { viewModel.deleteHabit(habitWithLogs.habit.id) },
                     onRename = { newName -> viewModel.renameHabit(habitWithLogs.habit.id, newName) },
                 )

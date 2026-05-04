@@ -101,7 +101,7 @@ class SettingsViewModel @Inject constructor(
                     }
 
                     // insertLogRaw returns -1 if the (habitId, date) pair already existed
-                    val rowId = repository.insertLogRaw(habit.id, row.failureDate)
+                    val rowId = repository.insertLogRaw(habit.id, row.failureDate, row.note)
                     if (rowId != -1L) logsImported++
                 }
 

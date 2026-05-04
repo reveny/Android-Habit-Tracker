@@ -24,7 +24,10 @@ object AppModule {
             HabitDatabase::class.java,
             "habit_tracker.db",
         )
-            .addMigrations(HabitDatabase.MIGRATION_2_3)
+            .addMigrations(
+                HabitDatabase.MIGRATION_2_3,
+                HabitDatabase.MIGRATION_3_4,
+            )
             .fallbackToDestructiveMigration(false)
             .build()
     }
