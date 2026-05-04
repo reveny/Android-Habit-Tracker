@@ -32,7 +32,9 @@ import com.reveny.habittracker.ui.theme.Sage
 import com.reveny.habittracker.ui.theme.Cream
 
 @Composable
-fun NavGraph() {
+fun NavGraph(
+    startOnAddHabit: Boolean = false,
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -46,6 +48,12 @@ fun NavGraph() {
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(350)
         prewarmTabs = true
+    }
+
+    LaunchedEffect(startOnAddHabit) {
+        if (startOnAddHabit) {
+            navController.navigate(Screen.AddHabit.route)
+        }
     }
 
     Scaffold(

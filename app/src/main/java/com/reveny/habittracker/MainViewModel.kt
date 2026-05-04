@@ -2,9 +2,16 @@ package com.reveny.habittracker
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
+import android.net.Uri
+import com.reveny.habittracker.data.local.entity.Habit
+import com.reveny.habittracker.data.model.Frequency
+import com.reveny.habittracker.data.model.TimeOfDay
 import com.reveny.habittracker.data.preferences.CongratulationsPreferencesStore
 import com.reveny.habittracker.data.repository.HabitRepository
 import com.reveny.habittracker.util.CleanStreakCalculator
+import com.reveny.habittracker.util.CsvImporter
+import com.reveny.habittracker.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +44,9 @@ class MainViewModel @Inject constructor(
     private val _monthlyReview = MutableStateFlow<MonthlyReview?>(null)
     val monthlyReview: StateFlow<MonthlyReview?> = _monthlyReview.asStateFlow()
 
+    private val _showOnboarding = MutableStateFlow(false)
+    val showOnboarding: StateFlow<Boolean> = _showOnboarding.asStateFlow()
+
     init {
         checkLaunchOverlays()
     }
@@ -65,11 +75,52 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun completeOnboarding() {
+        viewModelScope.launch {
+            congratulationsPreferencesStore.setOnboardingComplete(true)
+            _showOnboarding.value = false
+        }
+    }
+
+    fun importOnboardingData(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            val csvText = context.contentResolver.openInputStream(uri)
+                ?.use { it.bufferedReader().readText() }
+                ?: return@launch
+            val rows = CsvImporter.parse(csvText) ?: return@launch
+            val nameToHabit = repository.getAllHabits().first()
+                .associateBy { it.name }
+                .toMutableMap()
+
+            rows.forEach { row ->
+                val habit = nameToHabit.getOrPut(row.habitName) {
+                    val newHabit = Habit(
+                        name = row.habitName,
+                        type = row.habitType,
+                        frequency = Frequency.DAILY,
+                        timeOfDay = TimeOfDay.MORNING,
+                        createdAt = DateUtils.todayIso(),
+                    )
+                    val id = repository.createHabit(newHabit)
+                    newHabit.copy(id = id)
+                }
+                repository.insertLogRaw(habit.id, row.failureDate)
+            }
+            congratulationsPreferencesStore.setOnboardingComplete(true)
+            _showOnboarding.value = false
+        }
+    }
+
     private fun checkLaunchOverlays() {
         viewModelScope.launch {
-            val activeHabits = repository.getActiveHabitsWithFailures()
-                .first()
-                .map { it.habit }
+            val allHabits = repository.getAllHabits().first()
+            if (allHabits.isNotEmpty()) {
+                congratulationsPreferencesStore.setOnboardingComplete(true)
+            } else if (!congratulationsPreferencesStore.getOnboardingComplete()) {
+                _showOnboarding.value = true
+                return@launch
+            }
+            val activeHabits = allHabits.filter { it.archivedAt == null }
             if (activeHabits.isEmpty()) return@launch
 
             val today = LocalDate.now()

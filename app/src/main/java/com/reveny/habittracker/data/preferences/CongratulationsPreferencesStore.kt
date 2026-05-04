@@ -3,6 +3,7 @@ package com.reveny.habittracker.data.preferences
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -36,6 +37,14 @@ class CongratulationsPreferencesStore @Inject constructor(
         .catch { emit(emptyPreferences()) }
         .map { prefs -> prefs[LAST_SHOWN_MONTHLY_REVIEW_MONTH_KEY] }
 
+    val onboardingComplete: Flow<Boolean?> = context.congratulationsDataStore.data
+        .catch { emit(emptyPreferences()) }
+        .map { prefs -> prefs[ONBOARDING_COMPLETE_KEY] }
+
+    suspend fun getOnboardingComplete(): Boolean {
+        return onboardingComplete.first() ?: false
+    }
+
     suspend fun getHighestShownMilestone(): Int {
         return highestShownMilestone.first()
     }
@@ -66,9 +75,16 @@ class CongratulationsPreferencesStore @Inject constructor(
         }
     }
 
+    suspend fun setOnboardingComplete(complete: Boolean) {
+        context.congratulationsDataStore.edit { prefs ->
+            prefs[ONBOARDING_COMPLETE_KEY] = complete
+        }
+    }
+
     private companion object {
         val HIGHEST_SHOWN_MILESTONE_KEY = intPreferencesKey("highest_shown_milestone")
         val LAST_SHOWN_WEEKLY_REVIEW_END_DATE_KEY = stringPreferencesKey("last_shown_weekly_review_end_date")
         val LAST_SHOWN_MONTHLY_REVIEW_MONTH_KEY = stringPreferencesKey("last_shown_monthly_review_month")
+        val ONBOARDING_COMPLETE_KEY = booleanPreferencesKey("onboarding_complete")
     }
 }
