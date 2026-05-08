@@ -204,6 +204,7 @@ class MainViewModel @Inject constructor(
                 },
             )
         }
+        congratulationsPreferencesStore.setLastShownWeeklyReviewEndDate(weekEndIso)
         _weeklyReview.value = review
     }
 
@@ -247,6 +248,7 @@ class MainViewModel @Inject constructor(
                 },
             )
         }
+        congratulationsPreferencesStore.setLastShownMonthlyReviewMonth(monthKey)
         _monthlyReview.value = review
     }
 
