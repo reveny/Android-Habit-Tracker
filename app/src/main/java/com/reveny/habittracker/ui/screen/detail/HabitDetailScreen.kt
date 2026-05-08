@@ -276,11 +276,11 @@ private fun FailureTimeChartCard(
     val pointColor = Terracotta
     val todayColor = Sage
     val gridLabels = listOf(
-        formatChartTimeLabel(context, 0, 0) to 0f,
-        formatChartTimeLabel(context, 6, 0) to 0.25f,
+        formatChartTimeLabel(context, 23, 59) to 0f,
+        formatChartTimeLabel(context, 18, 0) to 0.25f,
         formatChartTimeLabel(context, 12, 0) to 0.5f,
-        formatChartTimeLabel(context, 18, 0) to 0.75f,
-        formatChartTimeLabel(context, 23, 59) to 1f,
+        formatChartTimeLabel(context, 6, 0) to 0.75f,
+        formatChartTimeLabel(context, 0, 0) to 1f,
     )
 
     HandDrawnCard {
@@ -352,7 +352,7 @@ private fun FailureTimeChartCard(
                         } else {
                             size.width * (point.dayIndex.toFloat() / (days.size - 1))
                         }
-                        val y = size.height * (point.minuteOfDay / 1440f)
+                        val y = size.height * (1f - (point.minuteOfDay / 1440f))
                         drawCircle(
                             color = pointColor.copy(alpha = 0.2f),
                             radius = 9.dp.toPx(),
