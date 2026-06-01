@@ -16,8 +16,8 @@ android {
         applicationId = "com.reveny.habittracker"
         minSdk = 24
         targetSdk = 36
-        versionCode = 110
-        versionName = "1.1.0"
+        versionCode = 120
+        versionName = "1.2.0"
     }
 
     buildTypes {

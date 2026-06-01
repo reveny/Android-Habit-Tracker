@@ -14,6 +14,7 @@ A minimalist Android habit tracker. Track habits you're trying to build or quit,
   <table>
     <tr>
       <td align="center"><img src="art/today_preview.png" width="160"/></td>
+      <td align="center"><img src="art/habit_detail_preview.png" width="160"/></td>
       <td align="center"><img src="art/habits_preview.png" width="160"/></td>
       <td align="center"><img src="art/calendar_preview.png" width="160"/></td>
       <td align="center"><img src="art/add_habit_preview.png" width="160"/></td>
@@ -21,6 +22,7 @@ A minimalist Android habit tracker. Track habits you're trying to build or quit,
     </tr>
     <tr>
       <td align="center">Today</td>
+      <td aligns="center">Habit Details</td>
       <td align="center">Trends</td>
       <td align="center">Calendar</td>
       <td align="center">Add Habit</td>
