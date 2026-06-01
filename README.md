@@ -47,7 +47,7 @@ A minimalist Android habit tracker. Track habits you're trying to build or quit,
 
 ## Todo
 
-- [ ] App icon
+- [x] App icon
 - [ ] F-Droid publication
 
 ### Home Screen Widgets
