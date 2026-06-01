@@ -1,0 +1,1 @@
+A minimalist habit tracker to log failures rather than successes

@@ -1,0 +1,11 @@
+- Added total and per-habit clean streaks in the app.
+- Redesigned the Trends screen with history charts.
+- Added reminder notifications for build habits.
+- Added 30/60/90 day streak milestone congratulations.
+- Fixed reminder time picker to respect system 12/24-hour format.
+- Added smooth habit card loading animation.
+- Improved initial tab loading performance.
+- Added weekly and monthly review overlays.
+- Added onboarding for creating or importing habits.
+- Added optional notes when logging failures.
+- Added habit detail screen, archive/restore management, and failure time tracking.

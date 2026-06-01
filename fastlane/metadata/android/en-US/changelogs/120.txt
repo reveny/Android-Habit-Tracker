@@ -1,0 +1,5 @@
+- Added habit detail overview with calendar history, failure times, monthly failures, and motivation.
+- Added failure notes and custom failure time tracking.
+- Added archive and restore management for habits.
+- Improved review overlays so weekly reviews do not repeat on launch.
+- Updated app icons and preview images.

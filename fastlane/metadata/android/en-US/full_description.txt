@@ -1,0 +1,19 @@
+Habit Tracker is a minimalist Android app for tracking habits you want to build or quit.
+
+It focuses on simple failure logging, clean streaks, and useful review screens without adding unnecessary complexity.
+
+Features:
+
+- Track habits you want to build or quit
+- Add optional motivation notes to habits
+- Log failures for any date
+- Add optional notes and custom times to failure logs
+- View current clean streaks per habit and across all active habits
+- Review habit detail pages with calendar history, failure time patterns, and monthly failure charts
+- Filter calendar and trend views by habit
+- Archive habits and restore them later
+- Use home screen widgets for quick progress checks
+- Export and import data using CSV
+- Dark mode support following the system theme
+
+The app stores data locally on your device.
